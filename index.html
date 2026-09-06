@@ -232,7 +232,6 @@ footer{border-top:1px solid var(--line);margin-top:6px;padding:18px 0 0;font-siz
     <button role="tab" data-tab="lideres" aria-selected="false">Jogadoras</button>
     <button role="tab" data-tab="cumulativos" aria-selected="false">Cumulativos</button>
     <button role="tab" data-tab="triplos" aria-selected="false">Triplos</button>
-    <button role="tab" data-tab="notas" aria-selected="false">Metodologia</button>
   </div>
 </nav>
 
@@ -245,9 +244,8 @@ footer{border-top:1px solid var(--line);margin-top:6px;padding:18px 0 0;font-siz
         <div class="scroll"><table id="tab-clas"></table></div>
         <p class="note" style="margin-top:14px">
           <b>Critério de ordenação:</b> pontos (vitória 2, derrota 1, falta de comparência 0) e, em caso de
-          igualdade, diferença de pontos — o mesmo critério dos Comunicados Oficiais. As Águias Especiais e o
-          Napipine têm menos um jogo, por causa do adiamento do jogo n.º 1: a coluna <b>Pts/J</b> dá a leitura
-          corrigida.
+          igualdade, diferença de pontos — o mesmo critério dos Comunicados Oficiais. Fase regular completa:
+          7 jogos por equipa.
         </p>
       </div>
     </div>
@@ -279,37 +277,6 @@ footer{border-top:1px solid var(--line);margin-top:6px;padding:18px 0 0;font-siz
   <section id="cumulativos" class="stack" role="tabpanel" hidden></section>
   <section id="triplos" class="stack" role="tabpanel" hidden></section>
 
-  <section id="notas" class="stack" role="tabpanel" hidden>
-    <div class="card"><header><h2>Como se calcula</h2></header><div class="body">
-      <dl class="defs">
-        <dt>VAL</dt><dd>Valorização, o índice de eficácia da folha FIBA (coluna EF): PTS + RT + AS + RB + DE − lançamentos de campo falhados − lances livres falhados − PP.</dd>
-        <dt>Posses</dt><dd>LC tentados − ressaltos ofensivos + perdas + 0,44 × lances livres tentados. Reproduz os «pontos por posse» impressos nas folhas.</dd>
-        <dt>%LCe</dt><dd>Lançamentos de campo eficazes: (LCc + 0,5 × 3Pc) ÷ LC tentados — pesa o triplo pelo que ele vale a mais.</dd>
-        <dt>%PP</dt><dd>Perdas de bola por 100 posses.</dd>
-        <dt>%RO</dt><dd>Ressaltos ofensivos capturados sobre os disponíveis: RO ÷ (RO + RD do adversário).</dd>
-        <dt>Rácio LL</dt><dd>Lances livres convertidos ÷ lançamentos de campo tentados: mede a capacidade de chegar à linha.</dd>
-        <dt>Ef. defensiva</dt><dd>Pontos sofridos por 100 posses do adversário.</dd>
-      </dl>
-    </div></div>
-    <div class="card"><header><h2>Fontes e verificação</h2></header><div class="body">
-      <ul class="clean">
-        <li><b>Resultados e classificação:</b> Comunicados Oficiais n.º 06, 07 e 08/2026 da LMB.</li>
-        <li><b>Estatística individual:</b> folhas FIBA Box Score (Genius Sports) recebidas pela Secretaria-Geral.</li>
-        <li><b>Verificação automática antes de cada publicação:</b> a soma das linhas individuais é conferida
-            contra os totais impressos em todos os campos; a coluna EF de cada folha é recalculada jogadora a
-            jogadora; os parciais e as leituras de 5 em 5 minutos são conferidos contra o resultado final;
-            e a classificação contra a identidade Σ pontos marcados = Σ pontos sofridos
-            (<span class="num" id="somaPM"></span>). <b id="verif-res"></b></li>
-        <li><b>Numeração dos jogos:</b> segue-se a dos Comunicados Oficiais. A folha FIBA numera de forma
-            diferente sempre que um jogo é adiado — Costa do Sol × Ferroviário de Maputo, por exemplo, é o
-            jogo n.º 3 nos Comunicados e o n.º 4 na folha. As duas numerações estão indicadas em cada ficha.</li>
-        <li><b>Cobertura:</b> <span id="cobertura"></span></li>
-      </ul>
-    </div></div>
-    <div class="card"><header><h2>Qualidade dos dados — a corrigir com os clubes</h2>
-      <span class="hint">nomes que aparecem escritos de maneiras diferentes na mesma equipa e número</span></header>
-      <div class="body"><div id="qualidade"></div></div></div>
-  </section>
 
   <footer class="wrap" style="padding-left:0;padding-right:0">
     Liga Moçambicana de Basquetebol · Secretaria-Geral · documento de trabalho gerado a partir dos Comunicados
@@ -400,11 +367,6 @@ var JR_INFO=(function(){
   tiles.forEach(function(t){ host.appendChild(el("div",{class:"tile"},
     '<div class="k">'+t.k+'</div><div class="v">'+esc(t.v)+'</div><div class="s">'+esc(t.s)+'</div>')); });
   document.getElementById("clas-hint").textContent=JR_INFO.rotulo;
-  document.getElementById("somaPM").textContent="Σ = "+TOT_PM;
-  document.getElementById("verif-res").textContent = VERIF;
-  document.getElementById("cobertura").textContent =
-    IDS.length+" de "+JOGOS_FEITOS+" jogos realizados têm folha FIBA carregada. "
-    +"A classificação e os resultados estão completos; a estatística individual entra à medida que as folhas chegam.";
   document.getElementById("ficha-cobertura").textContent = IDS.length+" fichas disponíveis";
 })();
 
@@ -1019,8 +981,8 @@ function figEf(eqs){
   var host=document.getElementById("lideres");
   host.appendChild(el("div",{class:"note"},
     "<b>Base de cálculo:</b> "+IDS.length+" de "+JOGOS_FEITOS+" jogos realizados. As jogadoras são identificadas "
-    +"pelo par equipa + número, porque o nome aparece escrito de maneiras diferentes de folha para folha "
-    +"(ver <b>Metodologia → Qualidade dos dados</b>). Os quadros de líderes exigem 2 ou mais jogos."));
+    +"pelo par equipa + número, porque o nome aparece escrito de maneiras diferentes de folha para folha. "
+    +"Os quadros de líderes exigem 2 ou mais jogos."));
 
   var c1=el("div",{class:"card"});
   c1.innerHTML='<header><h2>Líderes da prova</h2><span class="hint">médias por jogo, mínimo 2 jogos</span></header>'
@@ -1110,7 +1072,7 @@ function hms(m){ var t=Math.round(m*60), mm=Math.floor(t/60), ss=t%60; return mm
     +" de "+JOGOS_FEITOS+" jogos realizados). O separador <b>Jogadoras</b> mostra médias por jogo; este mostra "
     +"as somas — a leitura que serve para recordes, prémios e boletins de fim de prova. As jogadoras são "
     +"identificadas pelo par equipa + número, porque o nome aparece escrito de maneiras diferentes de folha "
-    +"para folha (ver <b>Metodologia → Qualidade dos dados</b>)."));
+    +"para folha."));
 
   var c1=el("div",{class:"card"});
   c1.innerHTML='<header><h2>Líderes acumulados</h2><span class="hint">totais da época · todas as jogadoras com ficha</span></header>'
@@ -1201,7 +1163,7 @@ function hms(m){ var t=Math.round(m*60), mm=Math.floor(t/60), ss=t%60; return mm
 
 /* ============ qualidade dos dados ============ */
 (function qualidade(){
-  var host=document.getElementById("qualidade");
+  var host=document.getElementById("qualidade"); if(!host) return;
   var linhas=[];
   Object.keys(NOMES).forEach(function(k){
     var variantes=Object.keys(NOMES[k]);
@@ -1442,7 +1404,7 @@ function hms(m){ var t=Math.round(m*60), mm=Math.floor(t/60), ss=t%60; return mm
 })();
 
 /* ============ navegação ============ */
-var SECS=["classificacao","jogos","ficha","equipas","lideres","cumulativos","triplos","notas"];
+var SECS=["classificacao","jogos","ficha","equipas","lideres","cumulativos","triplos"];
 var btns=Array.prototype.slice.call(document.querySelectorAll("nav button"));
 function irPara(id){
   btns.forEach(function(b){ b.setAttribute("aria-selected", String(b.getAttribute("data-tab")===id)); });
