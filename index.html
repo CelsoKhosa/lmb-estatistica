@@ -257,9 +257,11 @@ footer{border-top:1px solid var(--line);margin-top:6px;padding:18px 0 0;font-siz
       <div class="body">
         <div class="scroll"><table id="tab-clas"></table></div>
         <p class="note" style="margin-top:14px">
-          <b>Critério de ordenação:</b> pontos (vitória 2, derrota 1, falta de comparência 0) e, em caso de
-          igualdade, diferença de pontos — o mesmo critério dos Comunicados Oficiais. Fase regular completa:
-          7 jogos por equipa.
+          <b>Critério de ordenação (Regras Oficiais da FIBA, Section D):</b> pontos de classificação
+          (vitória 2, derrota 1, falta de comparência 0); em caso de igualdade decidem, por esta ordem, os
+          resultados dos jogos entre as equipas empatadas, a diferença de pontos entre elas, os pontos
+          marcados entre elas e, só depois, a diferença de pontos e os pontos marcados em toda a prova.
+          Fase regular completa: 7 jogos por equipa. <span id="clas-emp"></span>
         </p>
       </div>
     </div>
@@ -341,6 +343,7 @@ var CORES=["#0A2E5C","#1B6EA8","#0089B8","#3E7C59","#7A7C1E","#C8811C","#9C5221"
 function corEq(cod){ var i=LIGA.equipas.findIndex(function(e){return e.cod===cod;}); return CORES[i%CORES.length]; }
 
 /* ============ classificação ============ */
+var DESEMPATES=[];
 function classificacao(){
   var t={}; LIGA.equipas.forEach(function(e){ t[e.cod]={cod:e.cod,J:0,V:0,D:0,PM:0,PS:0}; });
   LIGA.jornadas.forEach(function(jr){ if(jr.fase) return; jr.jogos.forEach(function(g){
@@ -353,7 +356,85 @@ function classificacao(){
     r.Pts=2*r.V+r.D; r.Dif=r.PM-r.PS;
     r.PMj=r.J?r.PM/r.J:0; r.PSj=r.J?r.PS/r.J:0; r.Difj=r.J?r.Dif/r.J:0; r.Ptsj=r.J?r.Pts/r.J:0;
     return r; });
-  arr.sort(function(a,b){ return b.Pts-a.Pts || b.Dif-a.Dif; });
+  /* --- ordenacao segundo a Section D (Classification of Teams) das Regras Oficiais da FIBA:
+         1) pontos de classificacao; 2) resultados dos jogos entre as equipas empatadas;
+         3) diferenca de pontos entre elas; 4) pontos marcados entre elas;
+         5) diferenca de pontos em todos os jogos; 6) pontos marcados em todos os jogos.
+         Se a mini-liga desempatar so algumas equipas, o critério recomeca para as que sobram. --- */
+  var JOGOS_REG=[];
+  LIGA.jornadas.forEach(function(jr){ if(jr.fase) return; jr.jogos.forEach(function(g){
+    if(g.estado==="jogado") JOGOS_REG.push(g); }); });
+
+  function miniLiga(cods){
+    var m={}; cods.forEach(function(c){ m[c]={pts:0,pm:0,ps:0,jogos:0}; });
+    JOGOS_REG.forEach(function(g){
+      if(cods.indexOf(g.casa)<0 || cods.indexOf(g.fora)<0) return;
+      var c=m[g.casa], f=m[g.fora];
+      c.jogos++; f.jogos++;
+      c.pm+=g.pc; c.ps+=g.pf; f.pm+=g.pf; f.ps+=g.pc;
+      if(g.pc>g.pf){ c.pts+=2; f.pts+=1; } else { f.pts+=2; c.pts+=1; }
+    });
+    cods.forEach(function(c){ m[c].dif=m[c].pm-m[c].ps; });
+    return m;
+  }
+  function resolve(grupo){
+    if(grupo.length<2) return grupo;
+    var m=miniLiga(grupo.map(function(r){return r.cod;}));
+    var chave=function(r){ var x=m[r.cod]; return [x.pts,x.dif,x.pm]; };
+    grupo.sort(function(a,b){ var A=chave(a), B=chave(b);
+      return B[0]-A[0] || B[1]-A[1] || B[2]-A[2] || b.Dif-a.Dif || b.PM-a.PM; });
+    var out=[], i=0;
+    while(i<grupo.length){
+      var j=i+1, k=chave(grupo[i]).join("|");
+      while(j<grupo.length && chave(grupo[j]).join("|")===k) j++;
+      var bloco=grupo.slice(i,j);
+      if(bloco.length>1){
+        if(bloco.length<grupo.length){ bloco=resolve(bloco); }
+        else { bloco.sort(function(a,b){ return b.Dif-a.Dif || b.PM-a.PM || (a.cod<b.cod?-1:1); }); }
+      }
+      out=out.concat(bloco); i=j;
+    }
+    return out;
+  }
+  arr.sort(function(a,b){ return b.Pts-a.Pts; });
+  var fim=[], i0=0;
+  while(i0<arr.length){
+    var j0=i0+1;
+    while(j0<arr.length && arr[j0].Pts===arr[i0].Pts) j0++;
+    fim=fim.concat(resolve(arr.slice(i0,j0)));
+    i0=j0;
+  }
+  arr=fim;
+  /* --- nota: como foi desfeito cada empate --- */
+  DESEMPATES=[];
+  var sinal=function(v){ return (v>0?"+":"\u2212")+Math.abs(v); };
+  var g0=0;
+  while(g0<arr.length){
+    var g1=g0+1;
+    while(g1<arr.length && arr[g1].Pts===arr[g0].Pts) g1++;
+    if(g1-g0>1){
+      var bl=arr.slice(g0,g1), cods=bl.map(function(r){return r.cod;});
+      var m2=miniLiga(cods);
+      var jogados=[];
+      JOGOS_REG.forEach(function(g){
+        if(cods.indexOf(g.casa)<0 || cods.indexOf(g.fora)<0) return;
+        var v=g.pc>g.pf?g.casa:g.fora, p=g.pc>g.pf?g.fora:g.casa;
+        jogados.push(EQ[v].curto+" venceu "+EQ[p].curto+" "+Math.max(g.pc,g.pf)+"\u2013"+Math.min(g.pc,g.pf));
+      });
+      var ptsIguais = cods.every(function(c){ return m2[c].pts===m2[cods[0]].pts; });
+      var txt = "<b>"+bl.map(function(r){return EQ[r.cod].curto;}).join(", ")+"</b> ("+bl[0].Pts+" pontos): ";
+      if(!jogados.length){ txt += "sem jogos entre si \u2014 decidiu a diferença de pontos da prova."; }
+      else if(bl.length===2){ txt += jogados.join(" · ")+" \u2014 decidiu o confronto directo."; }
+      else if(!ptsIguais){ txt += jogados.join(" · ")+" \u2014 decidiram os resultados entre elas."; }
+      else {
+        txt += jogados.join(" · ")+" \u2014 todas com "+m2[cods[0]].pts+" pontos na mini-liga; decidiu a "+
+               "diferença nos jogos entre elas ("+bl.map(function(r){
+                 return EQ[r.cod].curto+" "+sinal(m2[r.cod].dif); }).join(", ")+").";
+      }
+      DESEMPATES.push(txt);
+    }
+    g0=g1;
+  }
   arr.forEach(function(r,i){ r.pos=i+1; });
   return arr;
 }
@@ -400,6 +481,10 @@ var JR_INFO=(function(){
   tiles.forEach(function(t){ host.appendChild(el("div",{class:"tile"},
     '<div class="k">'+t.k+'</div><div class="v">'+esc(t.v)+'</div><div class="s">'+esc(t.s)+'</div>')); });
   document.getElementById("clas-hint").textContent=(PO_JOGOS.length?"classificação final da fase regular · ":"")+JR_INFO.rotulo;
+  var emp=document.getElementById("clas-emp");
+  if(emp && DESEMPATES.length){
+    emp.innerHTML="<b>Desempates:</b> "+DESEMPATES.join(" ");
+  }
   document.getElementById("ficha-cobertura").textContent = IDS.length+" fichas disponíveis";
 })();
 
